@@ -7,7 +7,7 @@ output: html_notebook
 rm(list=ls())
 ```
 
-In this Rmd, we build a bandit
+1st, we build a bandit class, and a method for pulling the bandits lever to return some reward.  Each bandit has its own mean and standard deviation to control its reward.
 
 ```{r}
 
