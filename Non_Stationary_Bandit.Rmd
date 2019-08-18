@@ -1,0 +1,41 @@
+---
+title: "NON-S-BANDIT-HYSMAX001"
+output: html_notebook
+---
+
+```{r}
+rm(list=ls())
+```
+
+In this Rmd, we build a bandit
+
+```{r}
+
+bandit <- setClass("bandit", slots = representation(mu = "numeric",st =  "numeric") )
+
+b1 <- bandit(mu = 0, st = 1)
+# b1@mu # use the at symbol to access the classes attributes.
+# b1@st 
+
+pull_lever <- function(mu, st){
+# Shell for setMethod
+}
+
+setMethod("pull_lever", "bandit", 
+          function(mu,st){
+            # print(mu@st)  # why tf does this work??
+            # print(mu@mu)
+            # s <- pull_lever(mu,st)
+            return(rnorm(1,mean = mu@mu, sd = mu@st))
+          })
+
+
+pull_lever(b1)
+
+```
+
+
+```{r}
+
+```
+
