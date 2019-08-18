@@ -13,7 +13,7 @@ rm(list=ls())
 
 bandit <- setClass("bandit", slots = representation(mu = "numeric",st =  "numeric") )
 
-b1 <- bandit(mu = 0, st = 1)
+b1 <- bandit(mu = 1, st = 3)
 # b1@mu # use the at symbol to access the classes attributes.
 # b1@st 
 
@@ -34,8 +34,28 @@ pull_lever(b1)
 
 ```
 
+Now that we have our bandit class, we create 5 bandits, and the Q table, to learn optimal play
 
 ```{r}
+b1 <- bandit(mu=1,st=3)
+b2 <- bandit(mu=2,st=3)
+b3 <- bandit(mu=3,st=3)
+b4 <- bandit(mu=4,st=3)
+b5 <- bandit(mu=5,st=3)
+
+bandits <- c(b1,b2,b3,b4,b5)
+
+
+
+```
+
+From Sutton and Barto page 38.
+
+Making the bandits non stationary, and comparing $Q_{k+1}=Q_{k}+\frac{1}{k}\left[R_{k}-Q_{k}\right]$ to $Q_{k+1}=Q_{k}+\alpha\left[R_{k}-Q_{k}\right]$, here we are changing $\text {StepSize}$ in $\text { NewEstimate } \leftarrow \text { OldEstimate }+\text { StepSize [Target- OldEstimate] }$, so that instead of taking the average reward to update our $Q$ table, we are assigning higher weightings to more recent rewards, in an attempt to deal with the non-stationarity. 
+
+```{r}
+
+
 
 ```
 
