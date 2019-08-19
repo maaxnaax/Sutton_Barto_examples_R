@@ -5,9 +5,10 @@ output: html_notebook
 
 ```{r}
 rm(list=ls())
+require(Matrix)
 ```
 
-1st, we build a bandit class, and a method for pulling the bandits lever to return some reward.  Each bandit has its own mean and standard deviation to control its reward.
+1st, we build a bandit class, and a method for pulling the bandits lever to return some reward.  Each bandit has its own mean and standard deviation to control its reward. I like to think of each lever as its own bandit.
 
 ```{r}
 
@@ -18,7 +19,7 @@ b1 <- bandit(mu = 1, st = 3)
 # b1@st 
 
 pull_lever <- function(mu, st){
-# Shell for setMethod
+  # Shell for setMethod
 }
 
 setMethod("pull_lever", "bandit", 
@@ -37,25 +38,184 @@ pull_lever(b1)
 Now that we have our bandit class, we create 5 bandits, and the Q table, to learn optimal play
 
 ```{r}
-b1 <- bandit(mu=1,st=3)
-b2 <- bandit(mu=2,st=3)
-b3 <- bandit(mu=3,st=3)
-b4 <- bandit(mu=4,st=3)
-b5 <- bandit(mu=5,st=3)
+sd <- 0.154
+b1 <- bandit(mu=1,st=sd)
+b2 <- bandit(mu=2,st=sd)
+b3 <- bandit(mu=3,st=sd)
+b4 <- bandit(mu=4,st=sd)
+b5 <- bandit(mu=5,st=sd)
 
 bandits <- c(b1,b2,b3,b4,b5)
-
-
 
 ```
 
 From Sutton and Barto page 38.
 
-Making the bandits non stationary, and comparing $Q_{k+1}=Q_{k}+\frac{1}{k}\left[R_{k}-Q_{k}\right]$ to $Q_{k+1}=Q_{k}+\alpha\left[R_{k}-Q_{k}\right]$, here we are changing $\text {StepSize}$ in $\text { NewEstimate } \leftarrow \text { OldEstimate }+\text { StepSize [Target- OldEstimate] }$, so that instead of taking the average reward to update our $Q$ table, we are assigning higher weightings to more recent rewards, in an attempt to deal with the non-stationarity. 
+Making the bandits non stationary, and comparing $Q_{k+1}=Q_{k}+\frac{1}{k}\left[R_{k}-Q_{k}\right]$ to $Q_{k+1}=Q_{k}+\alpha\left[R_{k}-Q_{k}\right]$.  Here the difference is $\text {StepSize}$ in $\text { NewEstimate } \leftarrow \text { OldEstimate }+\text { StepSize [Target- OldEstimate] }$.  The latter, instead of taking the average reward to update our $Q$ table, we are assigning higher weightings to more recent rewards, in an attempt to deal with the non-stationarity. (learn how to write you plum)
+
+```{r}
+# There is only one state in the n-arm bandit scenario, and there are n actions.
+# Action 1 pulls the lever on bandit b1, ..., Action 5 pulls the lever on b5.
+
+t <- 400L
+n <- 70L
+epsilons <- c(0.001, 0.1, 0.01)
+Average_Returns <- matrix(0, ncol = t, nrow = 3)
+
+# =============== Stationary Time Series ==============
+ts <- matrix(nrow = length(bandits), ncol = t)
+
+for(spin in 1:t){
+  for(ban in 1:length(bandits)){
+    ts[ban,spin] <- pull_lever(bandits[[ban]])
+  }
+}
+# =====================================================
+  
+# The 1/k method, where k is the number of times that some action has been used
+for (run in 1:n){
+  
+  
+  Q <- rep(0.2, 5) # init Q table (only 1 state, with 5 actions)
+  Q <- rbind(Q,Q,Q) # 3 rows, one for each epsilon
+  R <- matrix(0,nrow=3,ncol=t)
+  k <- rep(1,5)
+  k <- rbind(k,k,k)
+  
+  
+  for (e in 1:length(epsilons)){
+    for(i in 1:t){
+      if (epsilons[e] < runif(1) ){
+        action <- which.max(Q[e,])
+      }else{
+        action <- sample(1:5,1)
+      }
+      k[action] <- k[action]+1 # keeping track of how many times each action is used
+      R[e,i] <- ts[action,i]
+      Q[e,action] <- Q[e,action] + (1/(k[e,action])) * (R[e,i] - Q[e,action]) 
+    }
+  }
+  Average_Returns <- (Average_Returns + R) / 2
+}
+
+plot(Average_Returns[2,], type = "l", col="green", ylim = c(0, max(Average_Returns)))
+lines(Average_Returns[3,], col="red")
+lines(Average_Returns[1,], col="blue")
+
+
+```
+
+Introducing Non-Stationarity
 
 ```{r}
 
 
 
+t <- 400L
+n <- 70L
+epsilons <- c(0.001, 0.1, 0.01)
+Average_Returns <- matrix(0, ncol = t, nrow = 3)
+
+
+# ============= NON-Stationary Time Series ============
+ts <- matrix(nrow = length(bandits), ncol = t)
+
+for(spin in 1:t){
+  for(ban in 1:length(bandits)){
+    ts[ban,spin] <- pull_lever(bandits[[ban]])
+    if(spin %% round(t/5) == 1){ # introducing non-stationarity
+      b5@mu <- b5@mu-1
+      b3@mu <- b3@mu+0.5
+      b4@mu <- b4@mu-0.5
+      b1@mu <- b1@mu+1
+    }
+  }
+}
+# =====================================================
+
+
+# The 1/k method, where k is the number of times that some action has been used
+for (run in 1:n){
+  
+  
+  Q <- rep(0.2, 5) # init Q table (only 1 state, with 5 actions)
+  Q <- rbind(Q,Q,Q) # 3 rows, one for each epsilon
+  R <- matrix(0,nrow=3,ncol=t)
+  k <- rep(1,5)
+  k <- rbind(k,k,k)
+  
+  
+  
+  for (e in 1:length(epsilons)){
+    
+
+    for(i in 1:t){
+      if (epsilons[e] < runif(1) ){
+        action <- which.max(Q[e,])
+      }else{
+        action <- sample(1:5,1)
+      }
+      k[action] <- k[action]+1 # keeping track of how many times each action is used
+      R[e,i] <- ts[action,i]
+      Q[e,action] <- Q[e,action] + (1/(k[e,action])) * (R[e,i] - Q[e,action]) 
+      
+    }
+  }
+  Average_Returns <- (Average_Returns + R) / 2
+}
+
+plot(Average_Returns[2,], type = "l", col="green", ylim = c(0, max(Average_Returns)))
+lines(Average_Returns[3,], col="red")
+lines(Average_Returns[1,], col="blue")
+
+
+
 ```
+The above method used $\alpha_k = 1/k$.  The method below uses a fixed $\alpha = 0.5$.
+The goal is to have a constant step-size, so as to weight more rescent rewards higher than those experienced in the past.
+
+```{r}
+
+
+Average_Returns <- matrix(0, ncol = t, nrow = 3)
+
+# The ALPHA method:
+for (run in 1:n){
+  
+  
+  Q <- rep(0.2, 5) # init Q table (only 1 state, with 5 actions)
+  Q <- rbind(Q,Q,Q) # 3 rows, one for each epsilon
+  R <- matrix(0,nrow=3,ncol=t)
+  k <- rep(1,5)
+  k <- rbind(k,k,k)
+  alpha <- 0.4
+  
+  
+  
+  for (e in 1:length(epsilons)){
+    
+    for(i in 1:t){
+      if (epsilons[e] < runif(1) ){
+        action <- which.max(Q[e,])
+      }else{
+        action <- sample(1:5,1)
+      }
+      k[action] <- k[action]+1 # keeping track of how many times each action is used
+      R[e,i] <- ts[action,i]
+      Q[e,action] <- Q[e,action] + alpha * (R[e,i] - Q[e,action]) 
+    }
+  }
+  Average_Returns <- (Average_Returns + R) / 2
+}
+
+plot(Average_Returns[2,], type = "l", col="green", ylim = c(0, max(Average_Returns)))
+lines(Average_Returns[3,], col="red")
+lines(Average_Returns[1,], col="blue")
+
+```
+
+
+
+
+
 
