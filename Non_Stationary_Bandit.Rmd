@@ -171,7 +171,7 @@ lines(Average_Returns[1,], col="blue")
 
 
 ```
-The above method used $\alpha_k = 1/k$.  The method below uses a fixed $\alpha = 0.5$.
+The above method used $\alpha_k = 1/k$.  The method below uses a fixed $\alpha = 0.1$ as the stepsize parameter.
 The goal is to have a constant step-size, so as to weight more rescent rewards higher than those experienced in the past.
 
 ```{r}
